@@ -4,6 +4,8 @@ My agent skills in one place, so I can install them all with one command.
 
 ## Install
 
+**macOS / Linux**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash
 ```
@@ -14,7 +16,21 @@ or
 git clone https://github.com/Janlxrd/agent-skills && ./agent-skills/install.sh
 ```
 
-This copies every folder in `skills/` into `~/.agents/skills/` and `~/.claude/skills/`. It also:
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1 | iex
+```
+
+or
+
+```powershell
+git clone https://github.com/Janlxrd/agent-skills; .\agent-skills\install.ps1
+```
+
+Requires git. If scripts are blocked, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` first (the `irm | iex` one-liner doesn't need it).
+
+This copies every folder in `skills/` into `~/.agents/skills/` and `~/.claude/skills/` (`%USERPROFILE%\.agents\skills` etc. on Windows). It also:
 - installs `anti-ui-slop` from uizze.com with `npx skills add` (it isn't on GitHub, so it isn't copied here)
 - installs `unslop` as a Claude Code plugin, if `claude` is on your PATH
 
