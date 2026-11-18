@@ -1,0 +1,12 @@
+{
+  "name": "janlxrd",
+  "description": "Janlxrd's agent skills",
+  "owner": { "name": "Janlxrd", "url": "https://github.com/Janlxrd" },
+  "plugins": [
+    {
+      "name": "agent-skills",
+      "source": "./",
+      "description": "All skills in one plugin: grill-me, grilling, agent-browser, find-skills, web-design-guidelines, canvas-design, seo-audit, unslop, karpathy-guidelines"
+    }
+  ]
+}
