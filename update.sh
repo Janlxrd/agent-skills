@@ -7,7 +7,7 @@ while read -r name repo path; do
   [ -z "$name" ] || [ "${name:0:1}" = "#" ] && continue
   d="$tmp/${repo//\//__}"
   [ -d "$d" ] || git clone --depth 1 -q "https://github.com/$repo" "$d"
-  rm -rf "skills/$name"; cp -r "$d/$path" "skills/$name"
-  [ -f "$d/LICENSE" ] && cp "$d/LICENSE" "skills/$name/LICENSE.upstream"
+  rm -rf "plugins/agent-skills/skills/$name"; cp -r "$d/$path" "plugins/agent-skills/skills/$name"
+  [ -f "$d/LICENSE" ] && cp "$d/LICENSE" "plugins/agent-skills/skills/$name/LICENSE.upstream"
   echo "updated $name <- $repo/$path"
 done < sources.txt

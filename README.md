@@ -30,7 +30,7 @@ git clone https://github.com/Janlxrd/agent-skills; .\agent-skills\install.ps1
 
 Requires git. If scripts are blocked, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` first (the `irm | iex` one-liner doesn't need it).
 
-This copies every folder in `skills/` into `~/.agents/skills/` and `~/.claude/skills/` (`%USERPROFILE%\.agents\skills` etc. on Windows). It also:
+This copies every folder in `plugins/agent-skills/skills/` into `~/.agents/skills/` and `~/.claude/skills/` (`%USERPROFILE%\.agents\skills` etc. on Windows). It also:
 - installs `anti-ui-slop` from uizze.com with `npx skills add` (it isn't on GitHub, so it isn't copied here)
 - installs `unslop` as a Claude Code plugin, if `claude` is on your PATH
 - installs the token-saving mods (9 Claude Code plugins) for your OS, if `claude` is on your PATH: `mods/mac/` from `install.sh` on macOS, `mods/windows/` from `install.ps1` on Windows. They're copied to `~/.claude/token-saving-mods` and added as a local plugin marketplace. Run `/reload-plugins` in any open Claude Code chat, then `/mods` to check them. Skipped on Linux.
@@ -43,7 +43,7 @@ In Claude Code:
 /plugin install agent-skills --marketplace Janlxrd/agent-skills
 ```
 
-Or add `Janlxrd/agent-skills` as a marketplace (Claude app: Plugins → Add marketplace; CLI: `claude plugin marketplace add Janlxrd/agent-skills`) and install `agent-skills` from it. This gives you every skill in `skills/` as one plugin, updated whenever the repo changes. (anti-ui-slop isn't included; use the install script for that.)
+Or add `Janlxrd/agent-skills` as a marketplace (Claude app: Plugins → Add marketplace; CLI: `claude plugin marketplace add Janlxrd/agent-skills`) and install `agent-skills` from it. This gives you every skill in `plugins/agent-skills/skills/` as one plugin, updated whenever the repo changes. (anti-ui-slop isn't included; use the install script for that.)
 
 ## Skills
 

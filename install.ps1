@@ -10,7 +10,7 @@ $Targets = @("$HOME\.agents\skills", "$HOME\.claude\skills")
 # Use the local checkout if run from one, else clone to a temp dir.
 $Src = $PSScriptRoot
 $Tmp = $null
-if (-not $Src -or -not (Test-Path "$Src\skills")) {
+if (-not $Src -or -not (Test-Path "$Src\plugins\agent-skills\skills")) {
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'git is required (https://git-scm.com/download/win)' }
   $Tmp = Join-Path ([IO.Path]::GetTempPath()) ("agent-skills-" + [guid]::NewGuid())
   git clone --depth 1 -q $Repo $Tmp
@@ -19,7 +19,7 @@ if (-not $Src -or -not (Test-Path "$Src\skills")) {
 }
 
 try {
-  $skills = Get-ChildItem "$Src\skills" -Directory
+  $skills = Get-ChildItem "$Src\plugins\agent-skills\skills" -Directory
   foreach ($t in $Targets) {
     New-Item -ItemType Directory -Force -Path $t | Out-Null
     foreach ($s in $skills) {

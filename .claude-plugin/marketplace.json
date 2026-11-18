@@ -5,7 +5,7 @@
   "plugins": [
     {
       "name": "agent-skills",
-      "source": "./",
+      "source": "./plugins/agent-skills",
       "description": "All skills in one plugin: grill-me, grilling, agent-browser, find-skills, web-design-guidelines, canvas-design, seo-audit, unslop, karpathy-guidelines"
     }
   ]

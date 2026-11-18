@@ -10,7 +10,7 @@ TARGETS=("$HOME/.agents/skills" "$HOME/.claude/skills")
 
 # Use the local checkout if run from one, else clone to a temp dir.
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
-if [ ! -d "$SRC/skills" ]; then
+if [ ! -d "$SRC/plugins/agent-skills/skills" ]; then
   SRC="$(mktemp -d)"
   trap 'rm -rf "$SRC"' EXIT
   git clone --depth 1 -q "$REPO" "$SRC"
@@ -18,12 +18,12 @@ fi
 
 for t in "${TARGETS[@]}"; do
   mkdir -p "$t"
-  for s in "$SRC"/skills/*/; do
+  for s in "$SRC"/plugins/agent-skills/skills/*/; do
     name="$(basename "$s")"
     rm -rf "${t:?}/$name"
     cp -r "$s" "$t/$name"
   done
-  echo "installed $(ls "$SRC/skills" | wc -l | tr -d ' ') skills -> $t"
+  echo "installed $(ls "$SRC/plugins/agent-skills/skills" | wc -l | tr -d ' ') skills -> $t"
 done
 
 # anti-ui-slop is only published at uizze.com (not on GitHub), so pull it via the skills CLI.
