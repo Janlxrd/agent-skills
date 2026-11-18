@@ -39,4 +39,19 @@ if command -v claude >/dev/null; then
   claude plugin install unslop@heydamir || echo "warn: unslop plugin install failed"
 fi
 
+# token-saving-mods: Claude Code plugin pack, Mac build (no Linux build yet).
+# Copied to a fixed folder because a local marketplace points at its path.
+MODS=(input-router effort-optimizer model-router cache-clock handoff research-router efficient-browser-use mods savings-proof)
+if [ "$(uname)" = "Darwin" ] && command -v claude >/dev/null; then
+  dest="$HOME/.claude/token-saving-mods"
+  rm -rf "$dest"; cp -r "$SRC/mods/mac/token-saving-mods" "$dest"
+  claude plugin marketplace add "$dest" >/dev/null 2>&1 || claude plugin marketplace update token-saving-mods >/dev/null 2>&1 || true
+  for m in "${MODS[@]}"; do
+    claude plugin install "$m@token-saving-mods" || echo "warn: $m install failed"
+  done
+  echo "installed token-saving-mods -> $dest (run /reload-plugins in open Claude Code chats)"
+else
+  echo "skip: token-saving-mods (needs macOS and claude on PATH)"
+fi
+
 echo "done."

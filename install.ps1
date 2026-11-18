@@ -42,6 +42,21 @@ try {
     claude plugin install unslop@heydamir
     if ($LASTEXITCODE -ne 0) { Write-Warning 'unslop plugin install failed' }
   }
+  # token-saving-mods: Claude Code plugin pack, Windows build.
+  # Copied to a fixed folder because a local marketplace points at its path.
+  if (Get-Command claude -ErrorAction SilentlyContinue) {
+    $dest = "$HOME\.claude\token-saving-mods"
+    if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+    Copy-Item -Recurse "$Src\mods\windows\token-saving-mods" $dest
+    claude plugin marketplace add $dest 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) { claude plugin marketplace update token-saving-mods 2>$null | Out-Null }
+    $mods = 'input-router','effort-optimizer','model-router','cache-clock','handoff','research-router','efficient-browser-use','mods','savings-proof'
+    foreach ($m in $mods) {
+      claude plugin install "$m@token-saving-mods"
+      if ($LASTEXITCODE -ne 0) { Write-Warning "$m install failed" }
+    }
+    Write-Host "installed token-saving-mods -> $dest (run /reload-plugins in open Claude Code chats)"
+  } else { Write-Host 'skip: token-saving-mods (needs claude on PATH)' }
   Write-Host 'done.'
 } finally {
   if ($Tmp) { Remove-Item -Recurse -Force $Tmp -ErrorAction SilentlyContinue }
