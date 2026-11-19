@@ -30,10 +30,34 @@ git clone https://github.com/Janlxrd/agent-skills; .\agent-skills\install.ps1
 
 Requires git. If scripts are blocked, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` first (the `irm | iex` one-liner doesn't need it).
 
-This copies every folder in `plugins/agent-skills/skills/` into `~/.agents/skills/` and `~/.claude/skills/` (`%USERPROFILE%\.agents\skills` etc. on Windows). It also:
-- installs `anti-ui-slop` from uizze.com with `npx skills add` (it isn't on GitHub, so it isn't copied here)
-- installs `unslop` as a Claude Code plugin, if `claude` is on your PATH
-- installs the token-saving mods (9 Claude Code plugins) for your OS, if `claude` is on your PATH: `mods/mac/` from `install.sh` on macOS, `mods/windows/` from `install.ps1` on Windows. They're copied to `~/.claude/token-saving-mods` and added as a local plugin marketplace. Run `/reload-plugins` in any open Claude Code chat, then `/mods` to check them. Skipped on Linux.
+By default this installs everything:
+- every skill in `plugins/agent-skills/skills/`, copied into `~/.agents/skills/` (read by Codex, Cline, Warp, Zed, Kimi and others) and `~/.claude/skills/`
+- the same skills into **Cursor, Gemini CLI, GitHub Copilot, Windsurf and OpenCode**, but only for the ones it finds installed on your machine
+- `anti-ui-slop` from uizze.com via `npx skills add` (it isn't on GitHub, so it isn't copied here)
+- `unslop` as a Claude Code plugin, if `claude` is on your PATH
+- the token-saving mods (9 Claude Code plugins) for your OS, if `claude` is on your PATH: `mods/mac/` on macOS, `mods/windows/` on Windows. They're copied to `~/.claude/token-saving-mods` and added as a local plugin marketplace. Run `/reload-plugins` in any open Claude Code chat, then `/mods` to check them. Skipped on Linux.
+
+### Install only some of it
+
+| What you want | macOS / Linux | Windows |
+|---|---|---|
+| Skills only, no plugins or mods | `--skills-only` | `-SkillsOnly` |
+| Everything except the mods | `--no-mods` | `-NoMods` |
+| Everything except the unslop plugin | `--no-plugins` | `-NoPlugins` |
+| Just some skills | `--only grill-me,unslop` | `-Only grill-me,unslop` |
+| Skills into every tool, even ones not found | `--all-tools` | `-AllTools` |
+| Skills into Claude + `~/.agents` only | `--no-tools` | `-NoTools` |
+| List skill names | `--list` | `-List` |
+
+With the one-liners:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash -s -- --skills-only
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1))) -SkillsOnly
+```
 
 ## Install as a Claude Code plugin
 
