@@ -31,7 +31,10 @@ What to install (default: everything)
   --skills-only      Only the skills. No Claude Code plugins, no mods.
   --no-mods          Skip the token-saving mods.
   --no-plugins       Skip the unslop Claude Code plugin.
+  --no-claude-md     Don't add the global rules to ~/.claude/CLAUDE.md.
   --only a,b,c       Only these skills (implies --skills-only). See --list.
+
+--skills-only and --only also skip ~/.claude/CLAUDE.md.
 
 Where skills go (default: ~/.agents/skills, ~/.claude/skills, plus any of
 Cursor, Gemini CLI, GitHub Copilot, Windsurf, OpenCode found on this machine)
@@ -43,14 +46,15 @@ Cursor, Gemini CLI, GitHub Copilot, Windsurf, OpenCode found on this machine)
 EOF
 }
 
-SKIP_MODS=0 SKIP_PLUGINS=0 ONLY="" ONLY_SET=0 TOOLS_MODE=detect LIST=0
+SKIP_MODS=0 SKIP_PLUGINS=0 SKIP_CLAUDE_MD=0 ONLY="" ONLY_SET=0 TOOLS_MODE=detect LIST=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --skills-only) SKIP_MODS=1; SKIP_PLUGINS=1 ;;
+    --skills-only) SKIP_MODS=1; SKIP_PLUGINS=1; SKIP_CLAUDE_MD=1 ;;
+    --no-claude-md) SKIP_CLAUDE_MD=1 ;;
     --no-mods) SKIP_MODS=1 ;;
     --no-plugins) SKIP_PLUGINS=1 ;;
-    --only) shift; ONLY="${1:-}"; ONLY_SET=1; SKIP_MODS=1; SKIP_PLUGINS=1 ;;
-    --only=*) ONLY="${1#*=}"; ONLY_SET=1; SKIP_MODS=1; SKIP_PLUGINS=1 ;;
+    --only) shift; ONLY="${1:-}"; ONLY_SET=1; SKIP_MODS=1; SKIP_PLUGINS=1; SKIP_CLAUDE_MD=1 ;;
+    --only=*) ONLY="${1#*=}"; ONLY_SET=1; SKIP_MODS=1; SKIP_PLUGINS=1; SKIP_CLAUDE_MD=1 ;;
     --all-tools) TOOLS_MODE=all ;;
     --no-tools) TOOLS_MODE=none ;;
     --list) LIST=1 ;;
@@ -142,6 +146,22 @@ if [ "$SKIP_MODS" = 0 ]; then
   else
     echo "skip: token-saving-mods (needs macOS and claude on PATH)"
   fi
+fi
+
+# Global rules (coding + writing) into ~/.claude/CLAUDE.md, between markers.
+# Anything else already in that file is left alone; only our block is replaced.
+if [ "$SKIP_CLAUDE_MD" = 0 ]; then
+  md="$HOME/.claude/CLAUDE.md"
+  start="<!-- agent-skills:start -->" end="<!-- agent-skills:end -->"
+  mkdir -p "$HOME/.claude"; touch "$md"
+  if ! grep -qF "$start" "$md" && [ -s "$md" ]; then cp "$md" "$md.bak"; echo "backed up $md -> $md.bak"; fi
+  tmp="$(mktemp)"
+  awk -v s="$start" -v e="$end" '$0==s{skip=1;next} $0==e{skip=0;next} !skip' "$md" > "$tmp"
+  # drop trailing blank lines, then append our block
+  awk 'NF{for(;n>0;n--)print ""; print; next}{n++}' "$tmp" > "$tmp.2"
+  { cat "$tmp.2"; [ -s "$tmp.2" ] && echo; echo "$start"; cat "$SRC/claude/CLAUDE.md"; echo "$end"; } > "$md"
+  rm -f "$tmp" "$tmp.2"
+  echo "installed global rules -> $md"
 fi
 
 echo "done."

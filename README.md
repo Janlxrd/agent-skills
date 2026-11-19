@@ -35,6 +35,7 @@ By default this installs everything:
 - the same skills into **Cursor, Gemini CLI, GitHub Copilot, Windsurf and OpenCode**, but only for the ones it finds installed on your machine
 - `anti-ui-slop` from uizze.com via `npx skills add` (it isn't on GitHub, so it isn't copied here)
 - `unslop` as a Claude Code plugin, if `claude` is on your PATH
+- global rules into `~/.claude/CLAUDE.md`, so Claude follows them in every chat: the [Karpathy coding guidelines](https://github.com/multica-ai/andrej-karpathy-skills) plus a plain-writing section (no AI-sounding words, no filler). They're in [`claude/CLAUDE.md`](claude/CLAUDE.md). Anything you already have in that file is kept: the installer only adds or replaces its own block between `<!-- agent-skills:start -->` and `<!-- agent-skills:end -->`, and saves a `.bak` copy the first time.
 - the token-saving mods (9 Claude Code plugins) for your OS, if `claude` is on your PATH: `mods/mac/` on macOS, `mods/windows/` on Windows. They're copied to `~/.claude/token-saving-mods` and added as a local plugin marketplace. Run `/reload-plugins` in any open Claude Code chat, then `/mods` to check them. Skipped on Linux.
 
 ### Install only some of it
@@ -44,6 +45,7 @@ By default this installs everything:
 | Skills only, no plugins or mods | `--skills-only` | `-SkillsOnly` |
 | Everything except the mods | `--no-mods` | `-NoMods` |
 | Everything except the unslop plugin | `--no-plugins` | `-NoPlugins` |
+| Everything except `~/.claude/CLAUDE.md` | `--no-claude-md` | `-NoClaudeMd` |
 | Just some skills | `--only grill-me,unslop` | `-Only grill-me,unslop` |
 | Skills into every tool, even ones not found | `--all-tools` | `-AllTools` |
 | Skills into Claude + `~/.agents` only | `--no-tools` | `-NoTools` |

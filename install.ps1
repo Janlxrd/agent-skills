@@ -9,6 +9,7 @@ param(
   [switch]$SkillsOnly,   # only the skills: no Claude Code plugins, no mods
   [switch]$NoMods,       # skip the token-saving mods
   [switch]$NoPlugins,    # skip the unslop Claude Code plugin
+  [switch]$NoClaudeMd,   # don't add the global rules to ~/.claude/CLAUDE.md
   [string[]]$Only,       # only these skills (implies -SkillsOnly)
   [switch]$AllTools,     # install into Cursor, Gemini CLI, etc. even if not found
   [switch]$NoTools,      # only ~/.agents/skills and ~/.claude/skills
@@ -25,7 +26,10 @@ What to install (default: everything)
   -SkillsOnly        Only the skills. No Claude Code plugins, no mods.
   -NoMods            Skip the token-saving mods.
   -NoPlugins         Skip the unslop Claude Code plugin.
+  -NoClaudeMd        Don't add the global rules to ~/.claude/CLAUDE.md.
   -Only a,b,c        Only these skills (implies -SkillsOnly). See -List.
+
+-SkillsOnly and -Only also skip ~/.claude/CLAUDE.md.
 
 Where skills go (default: ~/.agents/skills, ~/.claude/skills, plus any of
 Cursor, Gemini CLI, GitHub Copilot, Windsurf, OpenCode found on this machine)
@@ -43,7 +47,7 @@ $ModNames = 'input-router','effort-optimizer','model-router','cache-clock','hand
 
 # Only also splits "a,b" passed as one string (e.g. from scriptblock calls).
 if ($Only) { $Only = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ }) }
-if ($SkillsOnly -or $Only) { $NoMods = $true; $NoPlugins = $true }
+if ($SkillsOnly -or $Only) { $NoMods = $true; $NoPlugins = $true; $NoClaudeMd = $true }
 
 # Always installed to: ~/.agents/skills (Codex, Cline, Warp, Zed, Kimi, ...) and ~/.claude/skills.
 $Targets = [System.Collections.Generic.List[string]]@("$HOME\.agents\skills", "$HOME\.claude\skills")
@@ -128,6 +132,22 @@ try {
       }
       Write-Host "installed token-saving-mods -> $dest (run /reload-plugins in open Claude Code chats)"
     } else { Write-Host 'skip: token-saving-mods (needs claude on PATH)' }
+  }
+  # Global rules (coding + writing) into ~/.claude/CLAUDE.md, between markers.
+  # Anything else already in that file is left alone; only our block is replaced.
+  if (-not $NoClaudeMd) {
+    $md = "$HOME\.claude\CLAUDE.md"
+    $start = '<!-- agent-skills:start -->'; $end = '<!-- agent-skills:end -->'
+    New-Item -ItemType Directory -Force -Path "$HOME\.claude" | Out-Null
+    $old = if (Test-Path $md) { [IO.File]::ReadAllText($md) } else { '' }
+    if ($old.Trim() -and -not $old.Contains($start)) { Copy-Item $md "$md.bak" -Force; Write-Host "backed up $md -> $md.bak" }
+    $kept = [regex]::Replace($old, '(?s)\r?\n?' + [regex]::Escape($start) + '.*?' + [regex]::Escape($end) + '\r?\n?', [Environment]::NewLine)
+    $kept = $kept.TrimEnd()
+    $ours = [IO.File]::ReadAllText("$Src\claude\CLAUDE.md").TrimEnd()
+    $nl = [Environment]::NewLine
+    $out = $(if ($kept) { $kept + $nl + $nl } else { '' }) + $start + $nl + $ours + $nl + $end + $nl
+    [IO.File]::WriteAllText($md, $out, (New-Object System.Text.UTF8Encoding $false))
+    Write-Host "installed global rules -> $md"
   }
   Write-Host 'done.'
 } finally {
