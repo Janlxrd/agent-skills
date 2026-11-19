@@ -1,4 +1,4 @@
-# Install the skills (and optionally the Claude Code plugins and mods) from this repo (Windows).
+# Install the agent-skills plugin (Claude Code), the skill files (other tools) and the mods. Windows.
 #
 #   irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1 | iex
 #   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1))) -SkillsOnly
@@ -6,13 +6,11 @@
 #
 # Run with -Help for all options.
 param(
-  [switch]$SkillsOnly,   # only the skills: no Claude Code plugins, no mods
+  [switch]$SkillsOnly,   # only skill files, everywhere: no plugin, no rules, no mods
+  [string[]]$Only,       # like -SkillsOnly, but just these skills
   [switch]$NoMods,       # skip the token-saving mods
-  [switch]$NoPlugins,    # skip the unslop Claude Code plugin
-  [switch]$NoRules,      # skip the global-rules plugin (always-on coding + writing rules)
-  [string[]]$Only,       # only these skills (implies -SkillsOnly)
-  [switch]$AllTools,     # install into Cursor, Gemini CLI, etc. even if not found
-  [switch]$NoTools,      # only ~/.agents/skills and ~/.claude/skills
+  [switch]$AllTools,     # copy skill files into Cursor, Gemini CLI, etc. even if not found
+  [switch]$NoTools,      # skill files only into ~/.agents/skills
   [switch]$List,         # list the skills and exit
   [switch]$Help
 )
@@ -22,20 +20,20 @@ if ($Help) {
   @'
 Usage: install.ps1 [options]
 
-What to install (default: everything)
-  -SkillsOnly        Only the skills. No Claude Code plugins, no mods.
+By default:
+  - Claude Code gets the agent-skills plugin (all skills + always-on coding
+    and writing rules), installed from the Janlxrd/agent-skills marketplace.
+  - Other tools get the skill files: ~/.agents/skills, plus Cursor, Gemini CLI,
+    GitHub Copilot, Windsurf and OpenCode if they're installed.
+  - The token-saving mods (Windows build).
+
+Options
+  -SkillsOnly        Only skill files, everywhere (incl. ~/.claude/skills).
+                     No plugin, no rules, no mods.
+  -Only a,b,c        Like -SkillsOnly, but just these skills. See -List.
   -NoMods            Skip the token-saving mods.
-  -NoPlugins         Skip the unslop Claude Code plugin.
-  -NoRules           Skip the global-rules plugin (always-on coding + writing rules).
-  -Only a,b,c        Only these skills (implies -SkillsOnly). See -List.
-
--SkillsOnly and -Only also skip the global-rules plugin.
-
-Where skills go (default: ~/.agents/skills, ~/.claude/skills, plus any of
-Cursor, Gemini CLI, GitHub Copilot, Windsurf, OpenCode found on this machine)
-  -AllTools          Also install into those tools even if they aren't found.
-  -NoTools           Only ~/.agents/skills and ~/.claude/skills.
-
+  -AllTools          Copy skill files into those tools even if they aren't found.
+  -NoTools           Skill files only into ~/.agents/skills.
   -List              List the skills and exit.
   -Help              Show this help.
 '@ | Write-Host
@@ -44,13 +42,33 @@ Cursor, Gemini CLI, GitHub Copilot, Windsurf, OpenCode found on this machine)
 
 $Repo = 'https://github.com/Janlxrd/agent-skills'
 $ModNames = 'input-router','effort-optimizer','model-router','cache-clock','handoff','research-router','efficient-browser-use','mods','savings-proof'
+$Retired = @('karpathy-guidelines')   # skills that used to be in this repo; old copies are removed
 
 # Only also splits "a,b" passed as one string (e.g. from scriptblock calls).
 if ($Only) { $Only = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ }) }
-if ($SkillsOnly -or $Only) { $NoMods = $true; $NoPlugins = $true; $NoRules = $true }
+$FilesOnly = [bool]($SkillsOnly -or $Only)
+if ($FilesOnly) { $NoMods = $true }
 
-# Always installed to: ~/.agents/skills (Codex, Cline, Warp, Zed, Kimi, ...) and ~/.claude/skills.
-$Targets = [System.Collections.Generic.List[string]]@("$HOME\.agents\skills", "$HOME\.claude\skills")
+$HasClaude = [bool](Get-Command claude -ErrorAction SilentlyContinue)
+$UsePlugin = (-not $FilesOnly) -and $HasClaude
+
+# Run claude without letting its stderr stop the script (Windows PowerShell 5.1 does that
+# with ErrorActionPreference=Stop). Returns $true when it exits 0.
+function Invoke-Claude {
+  param([switch]$Quiet, [Parameter(ValueFromRemainingArguments)][string[]]$Rest)
+  $old = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try {
+    if ($Quiet) { & claude @Rest *> $null } else { & claude @Rest 2>&1 | Out-Host }
+    return ($LASTEXITCODE -eq 0)
+  } finally { $ErrorActionPreference = $old }
+}
+
+# Skill files always go to ~/.agents/skills (Codex, Cline, Warp, Zed, Kimi, ...).
+# Claude Code gets them from the agent-skills plugin instead, unless -SkillsOnly/-Only
+# is used or claude isn't installed, in which case they're copied to ~/.claude/skills.
+$ClaudeSkills = "$HOME\.claude\skills"
+$Targets = [System.Collections.Generic.List[string]]@("$HOME\.agents\skills")
+if (-not $UsePlugin) { $Targets.Add($ClaudeSkills) }
 # Extra tools: name, folder that means it's installed, skills folder.
 $Tools = @(
   @('Cursor',         "$HOME\.cursor",             "$HOME\.cursor\skills"),
@@ -85,9 +103,10 @@ try {
     $Want = $Only
   } else { $Want = $All }
 
-  # Copy the bundled skills.
+  # Copy the skill files.
   foreach ($t in $Targets) {
     New-Item -ItemType Directory -Force -Path $t | Out-Null
+    foreach ($r in $Retired) { $p = Join-Path $t $r; if (Test-Path $p) { Remove-Item -Recurse -Force $p } }
     $count = 0
     foreach ($name in $Want) {
       $s = Join-Path $SkillsDir $name
@@ -97,24 +116,42 @@ try {
       Copy-Item -Recurse $s $dest
       $count++
     }
-    Write-Host "installed $count skills -> $t"
+    Write-Host "copied $count skills -> $t"
   }
 
   # anti-ui-slop is only published at uizze.com, so pull it via the skills CLI.
   if ($Want -contains 'anti-ui-slop') {
     if (Get-Command npx -ErrorAction SilentlyContinue) {
+      $old = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
       npx -y skills add https://uizze.com --skill anti-ui-slop -g -y
       if ($LASTEXITCODE -ne 0) { Write-Warning 'anti-ui-slop install failed' }
+      $ErrorActionPreference = $old
     } else { Write-Host 'skip: anti-ui-slop (needs npx / Node.js)' }
   }
 
-  $HasClaude = [bool](Get-Command claude -ErrorAction SilentlyContinue)
+  # agent-skills plugin for Claude Code: the skills plus always-on rules.
+  if ($UsePlugin) {
+    if (-not (Invoke-Claude -Quiet plugin marketplace add Janlxrd/agent-skills)) { Invoke-Claude -Quiet plugin marketplace update janlxrd | Out-Null }
+    if (-not (Invoke-Claude plugin install agent-skills@janlxrd)) { Write-Warning 'agent-skills plugin install failed' }
+    Invoke-Claude -Quiet plugin update agent-skills@janlxrd | Out-Null
 
-  # unslop as a Claude Code plugin too (the skill copy above works either way).
-  if (-not $NoPlugins -and $HasClaude) {
-    claude plugin marketplace add heydamir/unslop 2>$null | Out-Null
-    claude plugin install unslop@heydamir
-    if ($LASTEXITCODE -ne 0) { Write-Warning 'unslop plugin install failed' }
+    # Clean up what older versions of this script installed, so nothing loads twice.
+    # Only folders/plugins this script put there are touched.
+    foreach ($name in ($All + $Retired)) {
+      if ($name -eq 'anti-ui-slop') { continue }
+      $p = Join-Path $ClaudeSkills $name
+      if (Test-Path $p) { Remove-Item -Recurse -Force $p; Write-Host "removed old copy $p (now in the plugin)" }
+    }
+    $old = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    $installed = (& claude plugin list 2>$null) -join "`n"
+    $ErrorActionPreference = $old
+    foreach ($p in 'global-rules@janlxrd','unslop@heydamir') {
+      if ($installed -match [regex]::Escape($p)) {
+        if (Invoke-Claude -Quiet plugin uninstall $p) { Write-Host "removed old plugin $p (now in agent-skills)" }
+      }
+    }
+  } elseif (-not $FilesOnly) {
+    Write-Host "skip: agent-skills plugin (needs claude on PATH); skill files copied to $ClaudeSkills instead"
   }
 
   # token-saving-mods: Claude Code plugin pack, Windows build.
@@ -124,24 +161,12 @@ try {
       $dest = "$HOME\.claude\token-saving-mods"
       if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
       Copy-Item -Recurse "$Src\mods\windows\token-saving-mods" $dest
-      claude plugin marketplace add $dest 2>$null | Out-Null
-      if ($LASTEXITCODE -ne 0) { claude plugin marketplace update token-saving-mods 2>$null | Out-Null }
+      if (-not (Invoke-Claude -Quiet plugin marketplace add $dest)) { Invoke-Claude -Quiet plugin marketplace update token-saving-mods | Out-Null }
       foreach ($m in $ModNames) {
-        claude plugin install "$m@token-saving-mods"
-        if ($LASTEXITCODE -ne 0) { Write-Warning "$m install failed" }
+        if (-not (Invoke-Claude plugin install "$m@token-saving-mods")) { Write-Warning "$m install failed" }
       }
       Write-Host "installed token-saving-mods -> $dest (run /reload-plugins in open Claude Code chats)"
     } else { Write-Host 'skip: token-saving-mods (needs claude on PATH)' }
-  }
-  # global-rules plugin: always-on coding + writing rules, loaded at the start of every
-  # Claude Code chat. Your own ~/.claude/CLAUDE.md is never edited.
-  if (-not $NoRules) {
-    if ($HasClaude) {
-      claude plugin marketplace add Janlxrd/agent-skills 2>$null | Out-Null
-      if ($LASTEXITCODE -ne 0) { claude plugin marketplace update janlxrd 2>$null | Out-Null }
-      claude plugin install global-rules@janlxrd
-      if ($LASTEXITCODE -ne 0) { Write-Warning 'global-rules install failed' }
-    } else { Write-Host 'skip: global-rules plugin (needs claude on PATH)' }
   }
 
   # An older version of this script wrote the rules into ~/.claude/CLAUDE.md.

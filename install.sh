@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the skills (and optionally the Claude Code plugins and mods) from this repo.
+# Install the agent-skills plugin (Claude Code), the skill files (other tools) and the mods.
 #
 #   curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash
 #   curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash -s -- --skills-only
@@ -12,8 +12,13 @@ REPO="https://github.com/Janlxrd/agent-skills"
 MODS=(input-router effort-optimizer model-router cache-clock handoff research-router efficient-browser-use mods savings-proof)
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
 
-# Always installed to: ~/.agents/skills (Codex, Cline, Warp, Zed, Kimi, ...) and ~/.claude/skills.
-BASE_TARGETS=("$HOME/.agents/skills" "$HOME/.claude/skills")
+# Skill files always go to ~/.agents/skills (Codex, Cline, Warp, Zed, Kimi, ...).
+# Claude Code gets them from the agent-skills plugin instead, unless --skills-only/--only
+# is used or claude isn't installed, in which case they're copied to ~/.claude/skills.
+BASE_TARGETS=("$HOME/.agents/skills")
+CLAUDE_SKILLS="$HOME/.claude/skills"
+# Skills that used to be in this repo; old copies are removed.
+RETIRED=(karpathy-guidelines)
 # Extra tools: "name|folder that means it's installed|skills folder".
 TOOLS=(
   "Cursor|$HOME/.cursor|$HOME/.cursor/skills"
@@ -27,34 +32,32 @@ usage() {
   cat <<'EOF'
 Usage: install.sh [options]
 
-What to install (default: everything)
-  --skills-only      Only the skills. No Claude Code plugins, no mods.
+By default:
+  - Claude Code gets the agent-skills plugin (all skills + always-on coding
+    and writing rules), installed from the Janlxrd/agent-skills marketplace.
+  - Other tools get the skill files: ~/.agents/skills, plus Cursor, Gemini CLI,
+    GitHub Copilot, Windsurf and OpenCode if they're installed.
+  - The token-saving mods (macOS only from this script).
+
+Options
+  --skills-only      Only skill files, everywhere (incl. ~/.claude/skills).
+                     No plugin, no rules, no mods.
+  --only a,b,c       Like --skills-only, but just these skills. See --list.
   --no-mods          Skip the token-saving mods.
-  --no-plugins       Skip the unslop Claude Code plugin.
-  --no-rules         Skip the global-rules plugin (always-on coding + writing rules).
-  --only a,b,c       Only these skills (implies --skills-only). See --list.
-
---skills-only and --only also skip the global-rules plugin.
-
-Where skills go (default: ~/.agents/skills, ~/.claude/skills, plus any of
-Cursor, Gemini CLI, GitHub Copilot, Windsurf, OpenCode found on this machine)
-  --all-tools        Also install into those tools even if they aren't found.
-  --no-tools         Only ~/.agents/skills and ~/.claude/skills.
-
+  --all-tools        Copy skill files into those tools even if they aren't found.
+  --no-tools         Skill files only into ~/.agents/skills.
   --list             List the skills and exit.
   -h, --help         Show this help.
 EOF
 }
 
-SKIP_MODS=0 SKIP_PLUGINS=0 SKIP_RULES=0 ONLY="" ONLY_SET=0 TOOLS_MODE=detect LIST=0
+FILES_ONLY=0 SKIP_MODS=0 ONLY="" ONLY_SET=0 TOOLS_MODE=detect LIST=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --skills-only) SKIP_MODS=1; SKIP_PLUGINS=1; SKIP_RULES=1 ;;
-    --no-rules) SKIP_RULES=1 ;;
+    --skills-only) FILES_ONLY=1; SKIP_MODS=1 ;;
     --no-mods) SKIP_MODS=1 ;;
-    --no-plugins) SKIP_PLUGINS=1 ;;
-    --only) shift; ONLY="${1:-}"; ONLY_SET=1; SKIP_MODS=1; SKIP_PLUGINS=1; SKIP_RULES=1 ;;
-    --only=*) ONLY="${1#*=}"; ONLY_SET=1; SKIP_MODS=1; SKIP_PLUGINS=1; SKIP_RULES=1 ;;
+    --only) shift; ONLY="${1:-}"; ONLY_SET=1; FILES_ONLY=1; SKIP_MODS=1 ;;
+    --only=*) ONLY="${1#*=}"; ONLY_SET=1; FILES_ONLY=1; SKIP_MODS=1 ;;
     --all-tools) TOOLS_MODE=all ;;
     --no-tools) TOOLS_MODE=none ;;
     --list) LIST=1 ;;
@@ -63,6 +66,9 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+HAS_CLAUDE=0; command -v claude >/dev/null && HAS_CLAUDE=1
+USE_PLUGIN=0; [ "$FILES_ONLY" = 0 ] && [ "$HAS_CLAUDE" = 1 ] && USE_PLUGIN=1
 
 # Use the local checkout if run from one, else clone to a temp dir.
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
@@ -96,6 +102,7 @@ want() { printf '%s\n' "${WANT[@]}" | grep -qx "$1"; }
 
 # Work out where they go.
 TARGETS=("${BASE_TARGETS[@]}")
+[ "$USE_PLUGIN" = 1 ] || TARGETS+=("$CLAUDE_SKILLS")
 for t in "${TOOLS[@]}"; do
   IFS='|' read -r name marker dir <<< "$t"
   if [ "$TOOLS_MODE" = all ] || { [ "$TOOLS_MODE" = detect ] && [ -d "$marker" ]; }; then
@@ -107,6 +114,7 @@ done
 count=0
 for t in "${TARGETS[@]}"; do
   mkdir -p "$t"
+  for r in "${RETIRED[@]}"; do rm -rf "${t:?}/$r"; done
   count=0
   for name in "${WANT[@]}"; do
     [ -d "$SKILLS_DIR/$name" ] || continue
@@ -114,7 +122,7 @@ for t in "${TARGETS[@]}"; do
     cp -r "$SKILLS_DIR/$name" "$t/$name"
     count=$((count + 1))
   done
-  echo "installed $count skills -> $t"
+  echo "copied $count skills -> $t"
 done
 
 # anti-ui-slop is only published at uizze.com, so pull it via the skills CLI.
@@ -126,10 +134,25 @@ if want anti-ui-slop; then
   fi
 fi
 
-# unslop as a Claude Code plugin too (the skill copy above works either way).
-if [ "$SKIP_PLUGINS" = 0 ] && command -v claude >/dev/null; then
-  claude plugin marketplace add heydamir/unslop >/dev/null 2>&1 || true
-  claude plugin install unslop@heydamir || echo "warn: unslop plugin install failed"
+# agent-skills plugin for Claude Code: the skills plus always-on rules.
+if [ "$USE_PLUGIN" = 1 ]; then
+  claude plugin marketplace add Janlxrd/agent-skills >/dev/null 2>&1 || claude plugin marketplace update janlxrd >/dev/null 2>&1 || true
+  claude plugin install agent-skills@janlxrd || echo "warn: agent-skills plugin install failed"
+  claude plugin update agent-skills@janlxrd >/dev/null 2>&1 || true
+
+  # Clean up what older versions of this script installed, so nothing loads twice.
+  # Only folders/plugins this script put there are touched.
+  for name in "${ALL[@]}" "${RETIRED[@]}"; do
+    [ "$name" = anti-ui-slop ] && continue
+    if [ -d "$CLAUDE_SKILLS/$name" ]; then rm -rf "${CLAUDE_SKILLS:?}/$name"; echo "removed old copy $CLAUDE_SKILLS/$name (now in the plugin)"; fi
+  done
+  for p in global-rules@janlxrd unslop@heydamir; do
+    if claude plugin list 2>/dev/null | grep -q "$p"; then
+      claude plugin uninstall "$p" >/dev/null 2>&1 && echo "removed old plugin $p (now in agent-skills)"
+    fi
+  done
+elif [ "$FILES_ONLY" = 0 ]; then
+  echo "skip: agent-skills plugin (needs claude on PATH); skill files copied to $CLAUDE_SKILLS instead"
 fi
 
 # token-saving-mods: Claude Code plugin pack, Mac build (no Linux build yet).
@@ -145,17 +168,6 @@ if [ "$SKIP_MODS" = 0 ]; then
     echo "installed token-saving-mods -> $dest (run /reload-plugins in open Claude Code chats)"
   else
     echo "skip: token-saving-mods (needs macOS and claude on PATH)"
-  fi
-fi
-
-# global-rules plugin: always-on coding + writing rules, loaded at the start of every
-# Claude Code chat. Your own ~/.claude/CLAUDE.md is never edited.
-if [ "$SKIP_RULES" = 0 ]; then
-  if command -v claude >/dev/null; then
-    claude plugin marketplace add Janlxrd/agent-skills >/dev/null 2>&1 || claude plugin marketplace update janlxrd >/dev/null 2>&1 || true
-    claude plugin install global-rules@janlxrd || echo "warn: global-rules install failed"
-  else
-    echo "skip: global-rules plugin (needs claude on PATH)"
   fi
 fi
 

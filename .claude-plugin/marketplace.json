@@ -9,12 +9,7 @@
     {
       "name": "agent-skills",
       "source": "./plugins/agent-skills",
-      "description": "All skills in one plugin: grill-me, grilling, agent-browser, find-skills, web-design-guidelines, canvas-design, seo-audit, unslop"
-    },
-    {
-      "name": "global-rules",
-      "source": "./plugins/global-rules",
-      "description": "Always-on rules for every Claude Code chat: Karpathy coding guidelines plus plain, human-sounding writing"
+      "description": "Skills (grill-me, grilling, agent-browser, find-skills, web-design-guidelines, canvas-design, seo-audit, unslop) plus always-on coding and writing rules"
     }
   ]
 }

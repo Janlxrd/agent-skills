@@ -1,4 +1,4 @@
-# Global rules (from the global-rules plugin in Janlxrd/agent-skills)
+# Global rules (from the agent-skills plugin in Janlxrd/agent-skills)
 
 ## Coding
 
