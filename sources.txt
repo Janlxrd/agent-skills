@@ -7,4 +7,3 @@ web-design-guidelines   vercel-labs/agent-skills      skills/web-design-guidelin
 canvas-design           anthropics/skills             skills/canvas-design
 seo-audit               coreyhaines31/marketingskills skills/seo-audit
 unslop                  heydamir/unslop               skills/unslop
-karpathy-guidelines     multica-ai/andrej-karpathy-skills skills/karpathy-guidelines

@@ -35,7 +35,7 @@ By default this installs everything:
 - the same skills into **Cursor, Gemini CLI, GitHub Copilot, Windsurf and OpenCode**, but only for the ones it finds installed on your machine
 - `anti-ui-slop` from uizze.com via `npx skills add` (it isn't on GitHub, so it isn't copied here)
 - `unslop` as a Claude Code plugin, if `claude` is on your PATH
-- global rules into `~/.claude/CLAUDE.md`, so Claude follows them in every chat: the [Karpathy coding guidelines](https://github.com/multica-ai/andrej-karpathy-skills) plus a plain-writing section (no AI-sounding words, no filler). They're in [`claude/CLAUDE.md`](claude/CLAUDE.md). Anything you already have in that file is kept: the installer only adds or replaces its own block between `<!-- agent-skills:start -->` and `<!-- agent-skills:end -->`, and saves a `.bak` copy the first time.
+- the `global-rules` plugin (see [Rules](#rules) below), if `claude` is on your PATH
 - the token-saving mods (9 Claude Code plugins) for your OS, if `claude` is on your PATH: `mods/mac/` on macOS, `mods/windows/` on Windows. They're copied to `~/.claude/token-saving-mods` and added as a local plugin marketplace. Run `/reload-plugins` in any open Claude Code chat, then `/mods` to check them. Skipped on Linux.
 
 ### Install only some of it
@@ -45,7 +45,7 @@ By default this installs everything:
 | Skills only, no plugins or mods | `--skills-only` | `-SkillsOnly` |
 | Everything except the mods | `--no-mods` | `-NoMods` |
 | Everything except the unslop plugin | `--no-plugins` | `-NoPlugins` |
-| Everything except `~/.claude/CLAUDE.md` | `--no-claude-md` | `-NoClaudeMd` |
+| Everything except the global-rules plugin | `--no-rules` | `-NoRules` |
 | Just some skills | `--only grill-me,unslop` | `-Only grill-me,unslop` |
 | Skills into every tool, even ones not found | `--all-tools` | `-AllTools` |
 | Skills into Claude + `~/.agents` only | `--no-tools` | `-NoTools` |
@@ -61,15 +61,33 @@ curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.s
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1))) -SkillsOnly
 ```
 
-## Install as a Claude Code plugin
+## Install as Claude Code plugins
+
+The repo is a plugin marketplace with two plugins:
+
+| Plugin | What it is |
+|---|---|
+| `agent-skills` | The skills. Claude uses one when a task calls for it. |
+| `global-rules` | Always-on rules, loaded at the start of every chat. |
 
 In Claude Code:
 
 ```
 /plugin install agent-skills --marketplace Janlxrd/agent-skills
+/plugin install global-rules --marketplace Janlxrd/agent-skills
 ```
 
-Or add `Janlxrd/agent-skills` as a marketplace (Claude app: Plugins → Add marketplace; CLI: `claude plugin marketplace add Janlxrd/agent-skills`) and install `agent-skills` from it. This gives you every skill in `plugins/agent-skills/skills/` as one plugin, updated whenever the repo changes. (anti-ui-slop isn't included; use the install script for that.)
+Or add `Janlxrd/agent-skills` as a marketplace (claude.ai/plugins → Add marketplace, or `claude plugin marketplace add Janlxrd/agent-skills`) and install either one from there. anti-ui-slop isn't included; use the install script for that.
+
+If you use the install script, you don't need the `agent-skills` plugin too. The script already copies the same skills.
+
+## Rules
+
+[`plugins/global-rules/rules.md`](plugins/global-rules/rules.md) holds the always-on rules:
+- **Coding:** the [Karpathy guidelines](https://github.com/multica-ai/andrej-karpathy-skills) (MIT): ask before assuming, keep it simple, make small changes, check your work.
+- **Writing:** plain, human-sounding text. No filler, no hype words, no em dashes, no emoji.
+
+The plugin feeds that file to Claude at the start of each Claude Code chat. It never edits your own `~/.claude/CLAUDE.md`, so whatever you keep there still works alongside it. To stop the rules, turn off `global-rules` in `/plugin`. To change them, edit `rules.md` and push.
 
 ## Skills
 
@@ -83,7 +101,6 @@ Or add `Janlxrd/agent-skills` as a marketplace (Claude app: Plugins → Add mark
 | canvas-design | [anthropics/skills](https://github.com/anthropics/skills) |
 | seo-audit | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) |
 | unslop | [heydamir/unslop](https://github.com/heydamir/unslop) |
-| karpathy-guidelines | [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) |
 | anti-ui-slop | [uizze.com](https://uizze.com) (installed via npx) |
 
 Each skill keeps its upstream license (`LICENSE.upstream` or `LICENSE.txt` in its folder).

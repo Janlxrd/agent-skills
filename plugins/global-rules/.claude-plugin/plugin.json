@@ -1,0 +1,7 @@
+{
+  "name": "global-rules",
+  "description": "Always-on rules for every Claude Code chat: Karpathy coding guidelines plus plain, human-sounding writing. Turn the plugin off to remove them.",
+  "version": "1.0.0",
+  "author": { "name": "Janlxrd", "url": "https://github.com/Janlxrd" },
+  "homepage": "https://github.com/Janlxrd/agent-skills"
+}
