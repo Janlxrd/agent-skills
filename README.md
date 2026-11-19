@@ -43,7 +43,6 @@ Requires git. You can also clone the repo and run `./install.sh` or `.\install.p
 By default the script:
 - installs the **agent-skills plugin** in Claude Code (same as above)
 - copies the skill files into `~/.agents/skills/` (read by Codex, Cline, Warp, Zed, Kimi and others), and into **Cursor, Gemini CLI, GitHub Copilot, Windsurf and OpenCode** if it finds them installed
-- installs `anti-ui-slop` from uizze.com via `npx skills add` (it isn't on GitHub, so it isn't stored here)
 - installs the token-saving mods (9 Claude Code plugins) for your OS: `mods/mac/` on macOS, `mods/windows/` on Windows. Skipped on Linux. Run `/reload-plugins`, then `/mods` to check them.
 - cleans up anything older versions of the script installed (copies in `~/.claude/skills`, the old `global-rules` and heydamir `unslop` plugins, the old block in `~/.claude/CLAUDE.md`), so nothing loads twice. Your own files and skills are left alone.
 
@@ -78,7 +77,7 @@ curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.s
 | canvas-design | [anthropics/skills](https://github.com/anthropics/skills) |
 | seo-audit | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) |
 | unslop | [heydamir/unslop](https://github.com/heydamir/unslop) |
-| anti-ui-slop | [uizze.com](https://uizze.com) (installed via npx) |
+| anti-ui-slop | [uizze.com](https://uizze.com) (not on GitHub, so update it by hand) |
 
 Each skill keeps its upstream license (`LICENSE.upstream` or `LICENSE.txt` in its folder).
 
@@ -92,4 +91,4 @@ input-router, effort-optimizer, model-router, cache-clock, handoff, research-rou
 ./update.sh && git commit -am "update skills" && git push
 ```
 
-`update.sh` re-pulls each skill from the repo listed in `sources.txt`. To add a skill, add a line there and run it.
+`update.sh` re-pulls each skill from the repo listed in `sources.txt`. To add a skill, add a line there and run it. anti-ui-slop isn't on GitHub: to update it, run `npx skills add https://uizze.com --skill anti-ui-slop -g -y` and copy the new folder over `plugins/agent-skills/skills/anti-ui-slop`.

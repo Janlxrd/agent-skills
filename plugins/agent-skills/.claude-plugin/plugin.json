@@ -1,7 +1,7 @@
 {
   "name": "agent-skills",
-  "description": "Janlxrd's skills (grill-me, grilling, agent-browser, find-skills, web-design-guidelines, canvas-design, seo-audit, unslop) plus always-on coding and writing rules",
-  "version": "2.0.0",
+  "description": "Janlxrd's skills (grill-me, grilling, agent-browser, find-skills, web-design-guidelines, canvas-design, seo-audit, unslop, anti-ui-slop) plus always-on coding and writing rules",
+  "version": "2.1.0",
   "author": {
     "name": "Janlxrd",
     "url": "https://github.com/Janlxrd"

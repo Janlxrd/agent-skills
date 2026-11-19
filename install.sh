@@ -81,7 +81,6 @@ SKILLS_DIR="$SRC/plugins/agent-skills/skills"
 
 ALL=()
 for s in "$SKILLS_DIR"/*/; do ALL+=("$(basename "$s")"); done
-ALL+=(anti-ui-slop)  # fetched from uizze.com, not stored in this repo
 
 if [ "$LIST" = 1 ]; then printf '%s\n' "${ALL[@]}"; exit 0; fi
 
@@ -98,7 +97,6 @@ else
   WANT=("${ALL[@]}")
 fi
 [ ${#WANT[@]} -gt 0 ] || { echo "--only needs at least one skill name (see --list)" >&2; exit 1; }
-want() { printf '%s\n' "${WANT[@]}" | grep -qx "$1"; }
 
 # Work out where they go.
 TARGETS=("${BASE_TARGETS[@]}")
@@ -125,15 +123,6 @@ for t in "${TARGETS[@]}"; do
   echo "copied $count skills -> $t"
 done
 
-# anti-ui-slop is only published at uizze.com, so pull it via the skills CLI.
-if want anti-ui-slop; then
-  if command -v npx >/dev/null; then
-    npx -y skills add https://uizze.com --skill anti-ui-slop -g -y || echo "warn: anti-ui-slop install failed"
-  else
-    echo "skip: anti-ui-slop (needs npx)"
-  fi
-fi
-
 # agent-skills plugin for Claude Code: the skills plus always-on rules.
 if [ "$USE_PLUGIN" = 1 ]; then
   claude plugin marketplace add Janlxrd/agent-skills >/dev/null 2>&1 || claude plugin marketplace update janlxrd >/dev/null 2>&1 || true
@@ -143,7 +132,6 @@ if [ "$USE_PLUGIN" = 1 ]; then
   # Clean up what older versions of this script installed, so nothing loads twice.
   # Only folders/plugins this script put there are touched.
   for name in "${ALL[@]}" "${RETIRED[@]}"; do
-    [ "$name" = anti-ui-slop ] && continue
     if [ -d "$CLAUDE_SKILLS/$name" ]; then rm -rf "${CLAUDE_SKILLS:?}/$name"; echo "removed old copy $CLAUDE_SKILLS/$name (now in the plugin)"; fi
   done
   for p in global-rules@janlxrd unslop@heydamir; do

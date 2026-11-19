@@ -94,7 +94,7 @@ if (-not $Src -or -not (Test-Path "$Src\plugins\agent-skills\skills")) {
 
 try {
   $SkillsDir = "$Src\plugins\agent-skills\skills"
-  $All = @(Get-ChildItem $SkillsDir -Directory | ForEach-Object { $_.Name }) + 'anti-ui-slop'
+  $All = @(Get-ChildItem $SkillsDir -Directory | ForEach-Object { $_.Name })
 
   if ($List) { $All | ForEach-Object { Write-Host $_ }; return }
 
@@ -119,16 +119,6 @@ try {
     Write-Host "copied $count skills -> $t"
   }
 
-  # anti-ui-slop is only published at uizze.com, so pull it via the skills CLI.
-  if ($Want -contains 'anti-ui-slop') {
-    if (Get-Command npx -ErrorAction SilentlyContinue) {
-      $old = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-      npx -y skills add https://uizze.com --skill anti-ui-slop -g -y
-      if ($LASTEXITCODE -ne 0) { Write-Warning 'anti-ui-slop install failed' }
-      $ErrorActionPreference = $old
-    } else { Write-Host 'skip: anti-ui-slop (needs npx / Node.js)' }
-  }
-
   # agent-skills plugin for Claude Code: the skills plus always-on rules.
   if ($UsePlugin) {
     if (-not (Invoke-Claude -Quiet plugin marketplace add Janlxrd/agent-skills)) { Invoke-Claude -Quiet plugin marketplace update janlxrd | Out-Null }
@@ -138,7 +128,6 @@ try {
     # Clean up what older versions of this script installed, so nothing loads twice.
     # Only folders/plugins this script put there are touched.
     foreach ($name in ($All + $Retired)) {
-      if ($name -eq 'anti-ui-slop') { continue }
       $p = Join-Path $ClaudeSkills $name
       if (Test-Path $p) { Remove-Item -Recurse -Force $p; Write-Host "removed old copy $p (now in the plugin)" }
     }
