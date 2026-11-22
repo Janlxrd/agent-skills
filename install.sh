@@ -1,166 +1,97 @@
 #!/usr/bin/env bash
-# Install the agent-skills plugin (Claude Code), the skill files (other tools) and the mods.
+# Install my agent skills, the Karpathy coding rules and graphify, each from its own source.
 #
 #   curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash -s -- --skills-only
-#   ./install.sh --only grill-me,unslop
+#   curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash -s -- --no-graphify
 #
 # Run with --help for all options.
 set -euo pipefail
 
-REPO="https://github.com/Janlxrd/agent-skills"
-MODS=(input-router effort-optimizer model-router cache-clock handoff research-router efficient-browser-use mods savings-proof)
-CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
-
-# Skill files always go to ~/.agents/skills (Codex, Cline, Warp, Zed, Kimi, ...).
-# Claude Code gets them from the agent-skills plugin instead, unless --skills-only/--only
-# is used or claude isn't installed, in which case they're copied to ~/.claude/skills.
-BASE_TARGETS=("$HOME/.agents/skills")
-CLAUDE_SKILLS="$HOME/.claude/skills"
-# Skills that used to be in this repo; old copies are removed.
-RETIRED=(karpathy-guidelines)
-# Extra tools: "name|folder that means it's installed|skills folder".
-TOOLS=(
-  "Cursor|$HOME/.cursor|$HOME/.cursor/skills"
-  "Gemini CLI|$HOME/.gemini|$HOME/.gemini/skills"
-  "GitHub Copilot|$HOME/.copilot|$HOME/.copilot/skills"
-  "Windsurf|$HOME/.codeium/windsurf|$HOME/.codeium/windsurf/skills"
-  "OpenCode|$CFG/opencode|$CFG/opencode/skills"
+# "source skill". Installed with the skills CLI (npx skills), which copies each
+# skill into every agent it finds (Claude Code, Cursor, Codex, Gemini CLI, ...).
+SKILLS=(
+  "mattpocock/skills grill-me"
+  "mattpocock/skills grilling"
+  "vercel-labs/agent-browser agent-browser"
+  "vercel-labs/skills find-skills"
+  "vercel-labs/agent-skills web-design-guidelines"
+  "anthropics/skills canvas-design"
+  "coreyhaines31/marketingskills seo-audit"
+  "heydamir/unslop unslop"
+  "https://uizze.com anti-ui-slop"
 )
 
 usage() {
   cat <<'EOF'
 Usage: install.sh [options]
 
-By default:
-  - Claude Code gets the agent-skills plugin (all skills + always-on coding
-    and writing rules), installed from the Janlxrd/agent-skills marketplace.
-  - Other tools get the skill files: ~/.agents/skills, plus Cursor, Gemini CLI,
-    GitHub Copilot, Windsurf and OpenCode if they're installed.
-  - The token-saving mods (macOS only from this script).
+Installs, each from its own source:
+  - the skills, with npx skills (needs Node.js)
+  - the Karpathy coding rules plugin for Claude Code (needs claude)
+  - graphify, with uv or pipx (needs one of them)
 
 Options
-  --skills-only      Only skill files, everywhere (incl. ~/.claude/skills).
-                     No plugin, no rules, no mods.
-  --only a,b,c       Like --skills-only, but just these skills. See --list.
-  --no-mods          Skip the token-saving mods.
-  --all-tools        Copy skill files into those tools even if they aren't found.
-  --no-tools         Skill files only into ~/.agents/skills.
-  --list             List the skills and exit.
-  -h, --help         Show this help.
+  --only a,b,c    Just these skills. See --list.
+  --no-rules      Skip the Karpathy rules plugin.
+  --no-graphify   Skip graphify.
+  --list          List the skills and exit.
+  -h, --help      Show this help.
 EOF
 }
 
-FILES_ONLY=0 SKIP_MODS=0 ONLY="" ONLY_SET=0 TOOLS_MODE=detect LIST=0
+ONLY="" NO_RULES=0 NO_GRAPHIFY=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --skills-only) FILES_ONLY=1; SKIP_MODS=1 ;;
-    --no-mods) SKIP_MODS=1 ;;
-    --only) shift; ONLY="${1:-}"; ONLY_SET=1; FILES_ONLY=1; SKIP_MODS=1 ;;
-    --only=*) ONLY="${1#*=}"; ONLY_SET=1; FILES_ONLY=1; SKIP_MODS=1 ;;
-    --all-tools) TOOLS_MODE=all ;;
-    --no-tools) TOOLS_MODE=none ;;
-    --list) LIST=1 ;;
+    --only) shift; ONLY="${1:-}" ;;
+    --only=*) ONLY="${1#*=}" ;;
+    --no-rules) NO_RULES=1 ;;
+    --no-graphify) NO_GRAPHIFY=1 ;;
+    --list) for s in "${SKILLS[@]}"; do echo "${s#* }"; done; exit 0 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; usage >&2; exit 1 ;;
   esac
   shift
 done
 
-HAS_CLAUDE=0; command -v claude >/dev/null && HAS_CLAUDE=1
-USE_PLUGIN=0; [ "$FILES_ONLY" = 0 ] && [ "$HAS_CLAUDE" = 1 ] && USE_PLUGIN=1
+has() { command -v "$1" >/dev/null 2>&1; }
 
-# Use the local checkout if run from one, else clone to a temp dir.
-SRC="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
-if [ ! -d "$SRC/plugins/agent-skills/skills" ]; then
-  SRC="$(mktemp -d)"
-  trap 'rm -rf "$SRC"' EXIT
-  git clone --depth 1 -q "$REPO" "$SRC"
-fi
-SKILLS_DIR="$SRC/plugins/agent-skills/skills"
-
-ALL=()
-for s in "$SKILLS_DIR"/*/; do ALL+=("$(basename "$s")"); done
-
-if [ "$LIST" = 1 ]; then printf '%s\n' "${ALL[@]}"; exit 0; fi
-
-# Work out which skills to install.
+# Pick the skills.
 WANT=()
-if [ "$ONLY_SET" = 1 ]; then
+if [ -n "$ONLY" ]; then
   IFS=',' read -r -a req <<< "$ONLY"
   for r in "${req[@]}"; do
     r="$(echo "$r" | tr -d ' ')"; [ -z "$r" ] && continue
-    if printf '%s\n' "${ALL[@]}" | grep -qx "$r"; then WANT+=("$r")
-    else echo "unknown skill: $r (see --list)" >&2; exit 1; fi
+    found=""
+    for s in "${SKILLS[@]}"; do [ "${s#* }" = "$r" ] && found="$s"; done
+    [ -n "$found" ] || { echo "unknown skill: $r (see --list)" >&2; exit 1; }
+    WANT+=("$found")
   done
 else
-  WANT=("${ALL[@]}")
+  WANT=("${SKILLS[@]}")
 fi
-[ ${#WANT[@]} -gt 0 ] || { echo "--only needs at least one skill name (see --list)" >&2; exit 1; }
 
-# Work out where they go.
-TARGETS=("${BASE_TARGETS[@]}")
-[ "$USE_PLUGIN" = 1 ] || TARGETS+=("$CLAUDE_SKILLS")
-for t in "${TOOLS[@]}"; do
-  IFS='|' read -r name marker dir <<< "$t"
-  if [ "$TOOLS_MODE" = all ] || { [ "$TOOLS_MODE" = detect ] && [ -d "$marker" ]; }; then
-    TARGETS+=("$dir")
-  fi
-done
-
-# Copy the bundled skills.
-count=0
-for t in "${TARGETS[@]}"; do
-  mkdir -p "$t"
-  for r in "${RETIRED[@]}"; do rm -rf "${t:?}/$r"; done
-  count=0
-  for name in "${WANT[@]}"; do
-    [ -d "$SKILLS_DIR/$name" ] || continue
-    rm -rf "${t:?}/$name"
-    cp -r "$SKILLS_DIR/$name" "$t/$name"
-    count=$((count + 1))
-  done
-  echo "copied $count skills -> $t"
-done
-
-# agent-skills plugin for Claude Code: the skills plus always-on rules.
-if [ "$USE_PLUGIN" = 1 ]; then
-  claude plugin marketplace add Janlxrd/agent-skills >/dev/null 2>&1 || claude plugin marketplace update janlxrd >/dev/null 2>&1 || true
-  claude plugin install agent-skills@janlxrd || echo "warn: agent-skills plugin install failed"
-  claude plugin update agent-skills@janlxrd >/dev/null 2>&1 || true
-
-  # Clean up what older versions of this script installed, so nothing loads twice.
-  # Only folders/plugins this script put there are touched.
-  for name in "${ALL[@]}" "${RETIRED[@]}"; do
-    if [ -d "$CLAUDE_SKILLS/$name" ]; then rm -rf "${CLAUDE_SKILLS:?}/$name"; echo "removed old copy $CLAUDE_SKILLS/$name (now in the plugin)"; fi
-  done
-  for p in global-rules@janlxrd unslop@heydamir; do
+# Older versions of this repo shipped its own copy of the skills as a plugin and
+# as copied folders. Remove those so nothing loads twice. Only our skill names
+# are touched; your own skills stay.
+if has claude; then
+  for p in agent-skills@janlxrd global-rules@janlxrd unslop@heydamir; do
     if claude plugin list 2>/dev/null | grep -q "$p"; then
-      claude plugin uninstall "$p" >/dev/null 2>&1 && echo "removed old plugin $p (now in agent-skills)"
+      claude plugin uninstall "$p" >/dev/null 2>&1 && echo "removed old plugin $p"
     fi
   done
-elif [ "$FILES_ONLY" = 0 ]; then
-  echo "skip: agent-skills plugin (needs claude on PATH); skill files copied to $CLAUDE_SKILLS instead"
+  claude plugin marketplace remove janlxrd >/dev/null 2>&1 && echo "removed old marketplace janlxrd" || true
 fi
-
-# token-saving-mods: Claude Code plugin pack, Mac build (no Linux build yet).
-# Copied to a fixed folder because a local marketplace points at its path.
-if [ "$SKIP_MODS" = 0 ]; then
-  if [ "$(uname)" = "Darwin" ] && command -v claude >/dev/null; then
-    dest="$HOME/.claude/token-saving-mods"
-    rm -rf "$dest"; cp -r "$SRC/mods/mac/token-saving-mods" "$dest"
-    claude plugin marketplace add "$dest" >/dev/null 2>&1 || claude plugin marketplace update token-saving-mods >/dev/null 2>&1 || true
-    for m in "${MODS[@]}"; do
-      claude plugin install "$m@token-saving-mods" || echo "warn: $m install failed"
-    done
-    echo "installed token-saving-mods -> $dest (run /reload-plugins in open Claude Code chats)"
-  else
-    echo "skip: token-saving-mods (needs macOS and claude on PATH)"
-  fi
-fi
-
-# An older version of this script wrote the rules into ~/.claude/CLAUDE.md.
-# Remove only that marked block so the rules aren't loaded twice. Nothing else is touched.
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
+for dir in "$HOME/.claude/skills" "$HOME/.cursor/skills" "$HOME/.gemini/skills" "$HOME/.copilot/skills" \
+           "$HOME/.codeium/windsurf/skills" "$CFG/opencode/skills"; do
+  for s in "${WANT[@]}" "x karpathy-guidelines"; do
+    name="${s#* }"
+    # Real folders only: links made by npx skills are left for it to manage.
+    if [ -d "$dir/$name" ] && [ ! -L "$dir/$name" ]; then
+      rm -rf "${dir:?}/$name"; echo "removed old copy $dir/$name"
+    fi
+  done
+done
 md="$HOME/.claude/CLAUDE.md"
 if [ -f "$md" ] && grep -qF "<!-- agent-skills:start -->" "$md"; then
   cp "$md" "$md.bak"
@@ -168,4 +99,48 @@ if [ -f "$md" ] && grep -qF "<!-- agent-skills:start -->" "$md"; then
   echo "removed old agent-skills block from $md (backup: $md.bak)"
 fi
 
-echo "done."
+# Skills.
+if has npx; then
+  for s in "${WANT[@]}"; do
+    src="${s% *}" name="${s#* }"
+    if npx -y skills@latest add "$src" --skill "$name" -g -y >/dev/null 2>&1; then
+      echo "installed $name from $src"
+    else
+      echo "warn: $name failed. Try: npx skills add $src --skill $name -g"
+    fi
+  done
+else
+  echo "skip: skills (needs Node.js for npx: https://nodejs.org)"
+fi
+
+# Karpathy coding rules: their own Claude Code plugin.
+if [ "$NO_RULES" = 0 ] && [ -z "$ONLY" ]; then
+  if has claude; then
+    claude plugin marketplace add multica-ai/andrej-karpathy-skills >/dev/null 2>&1 || claude plugin marketplace update karpathy-skills >/dev/null 2>&1 || true
+    if claude plugin install andrej-karpathy-skills@karpathy-skills >/dev/null 2>&1; then
+      echo "installed Karpathy rules plugin from multica-ai/andrej-karpathy-skills"
+    else
+      echo "warn: Karpathy rules plugin install failed"
+    fi
+  else
+    echo "skip: Karpathy rules plugin (needs claude on PATH)"
+  fi
+fi
+
+# graphify: Python CLI, then its own installer adds the skill to Claude Code.
+# Run from a temp folder so it can't touch files in the folder you're in.
+if [ "$NO_GRAPHIFY" = 0 ] && [ -z "$ONLY" ]; then
+  ok=0
+  if has uv; then uv tool install --upgrade graphifyy >/dev/null 2>&1 && ok=1
+  elif has pipx; then pipx install graphifyy >/dev/null 2>&1 || pipx upgrade graphifyy >/dev/null 2>&1; ok=1
+  fi
+  if [ "$ok" = 1 ] && has graphify; then
+    (cd "$(mktemp -d)" && graphify install >/dev/null) && echo "installed graphify (type /graphify . in Claude Code)"
+  elif [ "$ok" = 1 ]; then
+    echo "warn: graphify installed but isn't on PATH yet. Open a new terminal and run: graphify install"
+  else
+    echo "skip: graphify (needs uv or pipx: https://docs.astral.sh/uv/)"
+  fi
+fi
+
+echo "done. Run /reload-plugins in open Claude Code chats."

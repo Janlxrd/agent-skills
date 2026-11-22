@@ -1,9 +1,0 @@
-# name                  repo                          path
-grill-me                mattpocock/skills             skills/productivity/grill-me
-grilling                mattpocock/skills             skills/productivity/grilling
-agent-browser           vercel-labs/agent-browser     skills/agent-browser
-find-skills             vercel-labs/skills            skills/find-skills
-web-design-guidelines   vercel-labs/agent-skills      skills/web-design-guidelines
-canvas-design           anthropics/skills             skills/canvas-design
-seo-audit               coreyhaines31/marketingskills skills/seo-audit
-unslop                  heydamir/unslop               skills/unslop

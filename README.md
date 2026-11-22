@@ -1,30 +1,8 @@
 # agent-skills
 
-My agent skills and always-on rules in one Claude Code plugin, plus an install script for other tools.
+Scripts that install my agent skills, the Karpathy coding rules and graphify, each from its own source. Nothing is stored in this repo, so you always get the latest version from the people who make them.
 
-## What's in it
-
-One plugin, **`agent-skills`**:
-- **Skills** in [`plugins/agent-skills/skills/`](plugins/agent-skills/skills). Claude uses one when a task calls for it, or you type `/name`.
-- **Rules** in [`plugins/agent-skills/rules.md`](plugins/agent-skills/rules.md), loaded at the start of every Claude Code chat:
-  - **Coding:** the [Karpathy guidelines](https://github.com/multica-ai/andrej-karpathy-skills) (MIT): ask before assuming, keep it simple, make small changes, check your work.
-  - **Writing:** plain, human-sounding text. No filler, no hype words, no em dashes, no emoji.
-
-The rules never edit your own `~/.claude/CLAUDE.md`. Whatever you keep there still works alongside them.
-
-## Install in Claude Code
-
-Add the marketplace and install the one plugin:
-- **claude.ai/plugins:** Add marketplace → `Janlxrd/agent-skills` → install **agent-skills**. Keep "Sync automatically" on so pushes show up in new sessions.
-- **Claude Code:**
-
-  ```
-  /plugin install agent-skills --marketplace Janlxrd/agent-skills
-  ```
-
-To pick up a change in a chat that's already open, run `/reload-plugins`. New chats get it automatically.
-
-## Install script (Claude Code + other tools + mods)
+## Install
 
 **macOS / Linux**
 
@@ -38,32 +16,31 @@ curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.s
 irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1 | iex
 ```
 
-Requires git. You can also clone the repo and run `./install.sh` or `.\install.ps1`.
+The script installs:
+- **The skills** below, with [`npx skills`](https://github.com/vercel-labs/skills). It puts each one into every agent it finds on your machine (Claude Code, Cursor, Codex, Gemini CLI, Copilot, Windsurf, OpenCode and others). Needs [Node.js](https://nodejs.org).
+- **The Karpathy coding rules**, as their own Claude Code plugin from [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills). Needs Claude Code.
+- **[graphify](https://github.com/Graphify-Labs/graphify)**, which turns a codebase into a knowledge graph (type `/graphify .`). Installed with `uv` or `pipx`, then its own `graphify install` adds the skill. It also adds a short graphify section to `~/.claude/CLAUDE.md`. Needs [uv](https://docs.astral.sh/uv/) or pipx.
 
-By default the script:
-- installs the **agent-skills plugin** in Claude Code (same as above)
-- copies the skill files into `~/.agents/skills/` (read by Codex, Cline, Warp, Zed, Kimi and others), and into **Cursor, Gemini CLI, GitHub Copilot, Windsurf and OpenCode** if it finds them installed
-- installs the token-saving mods (9 Claude Code plugins) for your OS: `mods/mac/` on macOS, `mods/windows/` on Windows. Skipped on Linux. Run `/reload-plugins`, then `/mods` to check them.
-- cleans up anything older versions of the script installed (copies in `~/.claude/skills`, the old `global-rules` and heydamir `unslop` plugins, the old block in `~/.claude/CLAUDE.md`), so nothing loads twice. Your own files and skills are left alone.
+Anything it can't install (say, no Node.js) is skipped with a message. Your own skills and the rest of your `CLAUDE.md` are never touched. If you used an older version of this repo, the script also removes the old `agent-skills` plugin and the skill copies it made, so nothing loads twice.
 
 | What you want | macOS / Linux | Windows |
 |---|---|---|
-| Skill files only, no plugin, rules or mods | `--skills-only` | `-SkillsOnly` |
-| Just some skill files | `--only grill-me,unslop` | `-Only grill-me,unslop` |
-| Everything except the mods | `--no-mods` | `-NoMods` |
-| Skill files into every tool, even ones not found | `--all-tools` | `-AllTools` |
-| Skill files only into `~/.agents/skills` | `--no-tools` | `-NoTools` |
+| Just some skills | `--only grill-me,unslop` | `-Only grill-me,unslop` |
+| Skip the Karpathy rules | `--no-rules` | `-NoRules` |
+| Skip graphify | `--no-graphify` | `-NoGraphify` |
 | List skill names | `--list` | `-List` |
 
 With the one-liners:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash -s -- --no-mods
+curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.sh | bash -s -- --no-graphify
 ```
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1))) -NoMods
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1))) -NoGraphify
 ```
+
+Run `/reload-plugins` in any Claude Code chat that was already open.
 
 ## Skills
 
@@ -77,18 +54,28 @@ curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.s
 | canvas-design | [anthropics/skills](https://github.com/anthropics/skills) |
 | seo-audit | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) |
 | unslop | [heydamir/unslop](https://github.com/heydamir/unslop) |
-| anti-ui-slop | [uizze.com](https://uizze.com) (not on GitHub, so update it by hand) |
+| anti-ui-slop | [uizze.com](https://uizze.com) |
 
-Each skill keeps its upstream license (`LICENSE.upstream` or `LICENSE.txt` in its folder).
+## Update
 
-## Token-saving mods
-
-input-router, effort-optimizer, model-router, cache-clock, handoff, research-router, efficient-browser-use, mods, savings-proof. See `mods/<os>/token-saving-mods/INSTALL.md` for optional extras (Poppler, Firecrawl). The Windows build hasn't been tested on a Windows machine yet. To update them, replace the folder under `mods/` with the new pack and re-run the installer.
-
-## Updating
+Re-run the install script, or update just the skills:
 
 ```bash
-./update.sh && git commit -am "update skills" && git push
+npx skills update -g
 ```
 
-`update.sh` re-pulls each skill from the repo listed in `sources.txt`. To add a skill, add a line there and run it. anti-ui-slop isn't on GitHub: to update it, run `npx skills add https://uizze.com --skill anti-ui-slop -g -y` and copy the new folder over `plugins/agent-skills/skills/anti-ui-slop`.
+## Uninstall
+
+Removes the skills above, the Karpathy rules plugin and graphify (including its section in `~/.claude/CLAUDE.md`). Nothing else.
+
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/uninstall.sh | bash
+```
+
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/uninstall.ps1 | iex
+```
