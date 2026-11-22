@@ -55,6 +55,7 @@ Run `/reload-plugins` in any Claude Code chat that was already open.
 | seo-audit | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) |
 | unslop | [heydamir/unslop](https://github.com/heydamir/unslop) |
 | anti-ui-slop | [uizze.com](https://uizze.com) |
+| design-taste-frontend (Taste Skill) | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) |
 
 ## Update
 

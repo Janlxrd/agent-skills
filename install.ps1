@@ -24,7 +24,8 @@ $Skills = @(
   @('anthropics/skills',             'canvas-design'),
   @('coreyhaines31/marketingskills', 'seo-audit'),
   @('heydamir/unslop',               'unslop'),
-  @('https://uizze.com',             'anti-ui-slop')
+  @('https://uizze.com',             'anti-ui-slop'),
+  @('Leonxlnx/taste-skill',          'design-taste-frontend')
 )
 
 if ($Help) {

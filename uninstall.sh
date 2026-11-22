@@ -4,7 +4,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/Janlxrd/agent-skills/main/uninstall.sh | bash
 set -uo pipefail
 
-SKILLS=(grill-me grilling agent-browser find-skills web-design-guidelines canvas-design seo-audit unslop anti-ui-slop)
+SKILLS=(grill-me grilling agent-browser find-skills web-design-guidelines canvas-design seo-audit unslop anti-ui-slop design-taste-frontend)
 has() { command -v "$1" >/dev/null 2>&1; }
 
 # Skills, from every agent npx skills put them in.

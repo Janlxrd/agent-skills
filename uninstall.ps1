@@ -3,7 +3,7 @@
 #   irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/uninstall.ps1 | iex
 $ErrorActionPreference = 'Continue'
 
-$Skills = 'grill-me', 'grilling', 'agent-browser', 'find-skills', 'web-design-guidelines', 'canvas-design', 'seo-audit', 'unslop', 'anti-ui-slop'
+$Skills = 'grill-me', 'grilling', 'agent-browser', 'find-skills', 'web-design-guidelines', 'canvas-design', 'seo-audit', 'unslop', 'anti-ui-slop', 'design-taste-frontend'
 function Has($name) { [bool](Get-Command $name -ErrorAction SilentlyContinue) }
 function Run { $exe, $rest = $args; & $exe @rest *> $null; $LASTEXITCODE -eq 0 }
 $Npx = if (Has 'npx.cmd') { 'npx.cmd' } elseif (Has 'npx') { 'npx' } else { $null }
