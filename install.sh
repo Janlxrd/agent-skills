@@ -20,6 +20,7 @@ SKILLS=(
   "heydamir/unslop unslop"
   "https://uizze.com anti-ui-slop"
   "Leonxlnx/taste-skill design-taste-frontend"
+  "blader/humanizer humanizer"
 )
 
 usage() {
@@ -30,23 +31,26 @@ Installs, each from its own source:
   - the skills, with npx skills (needs Node.js)
   - the Karpathy coding rules plugin for Claude Code (needs claude)
   - graphify, with uv or pipx (needs one of them)
+  - headroom, with uv (needs uv). Start Claude with: headroom wrap claude
 
 Options
   --only a,b,c    Just these skills. See --list.
   --no-rules      Skip the Karpathy rules plugin.
   --no-graphify   Skip graphify.
+  --no-headroom   Skip headroom.
   --list          List the skills and exit.
   -h, --help      Show this help.
 EOF
 }
 
-ONLY="" NO_RULES=0 NO_GRAPHIFY=0
+ONLY="" NO_RULES=0 NO_GRAPHIFY=0 NO_HEADROOM=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --only) shift; ONLY="${1:-}" ;;
     --only=*) ONLY="${1#*=}" ;;
     --no-rules) NO_RULES=1 ;;
     --no-graphify) NO_GRAPHIFY=1 ;;
+    --no-headroom) NO_HEADROOM=1 ;;
     --list) for s in "${SKILLS[@]}"; do echo "${s#* }"; done; exit 0 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; usage >&2; exit 1 ;;
@@ -141,6 +145,20 @@ if [ "$NO_GRAPHIFY" = 0 ] && [ -z "$ONLY" ]; then
     echo "warn: graphify installed but isn't on PATH yet. Open a new terminal and run: graphify install"
   else
     echo "skip: graphify (needs uv or pipx: https://docs.astral.sh/uv/)"
+  fi
+fi
+
+# headroom: cuts the tokens Claude Code sends by squeezing context through a local proxy.
+# Only the CLI is installed; nothing changes until you start Claude with headroom wrap claude.
+if [ "$NO_HEADROOM" = 0 ] && [ -z "$ONLY" ]; then
+  if has uv; then
+    if uv tool install --upgrade --python 3.13 "headroom-ai[all]" >/dev/null 2>&1; then
+      echo "installed headroom (start Claude with: headroom wrap claude)"
+    else
+      echo "warn: headroom install failed. Try: uv tool install --python 3.13 \"headroom-ai[all]\""
+    fi
+  else
+    echo "skip: headroom (needs uv: https://docs.astral.sh/uv/)"
   fi
 fi
 

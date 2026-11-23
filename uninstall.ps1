@@ -3,7 +3,7 @@
 #   irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/uninstall.ps1 | iex
 $ErrorActionPreference = 'Continue'
 
-$Skills = 'grill-me', 'grilling', 'agent-browser', 'find-skills', 'web-design-guidelines', 'canvas-design', 'seo-audit', 'unslop', 'anti-ui-slop', 'design-taste-frontend'
+$Skills = 'grill-me', 'grilling', 'agent-browser', 'find-skills', 'web-design-guidelines', 'canvas-design', 'seo-audit', 'unslop', 'anti-ui-slop', 'design-taste-frontend', 'humanizer'
 function Has($name) { [bool](Get-Command $name -ErrorAction SilentlyContinue) }
 function Run { $exe, $rest = $args; & $exe @rest *> $null; $LASTEXITCODE -eq 0 }
 $Npx = if (Has 'npx.cmd') { 'npx.cmd' } elseif (Has 'npx') { 'npx' } else { $null }
@@ -41,6 +41,19 @@ if ((Has 'uv') -and ((& uv tool list 2>$null) -match '^graphifyy ')) {
   if (Run uv tool uninstall graphifyy) { Write-Host 'removed graphify CLI' }
 } elseif ((Has 'pipx') -and ((& pipx list 2>$null) -match 'graphifyy')) {
   if (Run pipx uninstall graphifyy) { Write-Host 'removed graphify CLI' }
+}
+
+# headroom: undo any wrap setup it made for Claude Code, then remove the CLI.
+if (Has 'headroom') {
+  $tmp = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid())
+  New-Item -ItemType Directory $tmp | Out-Null
+  Push-Location $tmp
+  $null = Run headroom unwrap claude
+  Pop-Location
+  Remove-Item $tmp -Recurse -Force
+}
+if ((Has 'uv') -and ((& uv tool list 2>$null) -match '^headroom-ai ')) {
+  if (Run uv tool uninstall headroom-ai) { Write-Host 'removed headroom' }
 }
 
 Write-Host 'done. Run /reload-plugins in open Claude Code chats.'

@@ -8,6 +8,7 @@ param(
   [string[]]$Only,       # just these skills
   [switch]$NoRules,      # skip the Karpathy rules plugin
   [switch]$NoGraphify,   # skip graphify
+  [switch]$NoHeadroom,   # skip headroom
   [switch]$List,         # list the skills and exit
   [switch]$Help
 )
@@ -25,7 +26,8 @@ $Skills = @(
   @('coreyhaines31/marketingskills', 'seo-audit'),
   @('heydamir/unslop',               'unslop'),
   @('https://uizze.com',             'anti-ui-slop'),
-  @('Leonxlnx/taste-skill',          'design-taste-frontend')
+  @('Leonxlnx/taste-skill',          'design-taste-frontend'),
+  @('blader/humanizer',              'humanizer')
 )
 
 if ($Help) {
@@ -36,11 +38,13 @@ Installs, each from its own source:
   - the skills, with npx skills (needs Node.js)
   - the Karpathy coding rules plugin for Claude Code (needs claude)
   - graphify, with uv or pipx (needs one of them)
+  - headroom, with uv (needs uv). Start Claude with: headroom wrap claude
 
 Options
   -Only a,b,c    Just these skills. See -List.
   -NoRules       Skip the Karpathy rules plugin.
   -NoGraphify    Skip graphify.
+  -NoHeadroom    Skip headroom.
   -List          List the skills and exit.
   -Help          Show this help.
 '@ | Write-Host
@@ -142,6 +146,20 @@ if (-not $NoGraphify -and -not $Only) {
     Write-Host "warn: graphify installed but isn't on PATH yet. Open a new terminal and run: graphify install"
   } else {
     Write-Host 'skip: graphify (needs uv or pipx: https://docs.astral.sh/uv/)'
+  }
+}
+
+# headroom: cuts the tokens Claude Code sends by squeezing context through a local proxy.
+# Only the CLI is installed; nothing changes until you start Claude with headroom wrap claude.
+if (-not $NoHeadroom -and -not $Only) {
+  if (Has 'uv') {
+    if (Run uv tool install --upgrade --python 3.13 'headroom-ai[all]') {
+      Write-Host 'installed headroom (start Claude with: headroom wrap claude)'
+    } else {
+      Write-Host 'warn: headroom install failed. Try: uv tool install --python 3.13 "headroom-ai[all]"'
+    }
+  } else {
+    Write-Host 'skip: headroom (needs uv: https://docs.astral.sh/uv/)'
   }
 }
 
