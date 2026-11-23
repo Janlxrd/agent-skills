@@ -71,6 +71,28 @@ if ($Only) {
   $Want = $Skills
 }
 
+# Install missing tools (Git, Node.js, uv) so everything works the first time.
+function Add-Path($p) { if ((Test-Path $p) -and -not (($env:Path -split ';') -contains $p)) { $env:Path = "$p;$env:Path" } }
+Add-Path "$HOME\.local\bin"
+if (-not (Has 'git') -and (Has 'winget')) {
+  Write-Host 'installing Git (winget)...'
+  $null = Run winget install --id Git.Git -e --silent --accept-package-agreements --accept-source-agreements
+  Add-Path "$env:ProgramFiles\Git\cmd"
+}
+if (-not $Npx -and (Has 'winget')) {
+  Write-Host 'installing Node.js (winget)...'
+  $null = Run winget install --id OpenJS.NodeJS.LTS -e --silent --accept-package-agreements --accept-source-agreements
+  Add-Path "$env:ProgramFiles\nodejs"
+  $Npx = if (Has 'npx.cmd') { 'npx.cmd' } else { $null }
+}
+if (-not $Npx) { Write-Host "warn: Node.js not found, so the skills can't install. Get it from https://nodejs.org and run this again." }
+if (-not $Only -and -not ($NoGraphify -and $NoHeadroom) -and -not (Has 'uv')) {
+  Write-Host 'installing uv (astral.sh)...'
+  $null = Run powershell -NoProfile -ExecutionPolicy ByPass -Command 'irm https://astral.sh/uv/install.ps1 | iex'
+  Add-Path "$HOME\.local\bin"
+  if (-not (Has 'uv')) { Write-Host 'warn: uv install failed, so graphify and headroom will be skipped' }
+}
+
 # Older versions of this repo shipped its own copy of the skills as a plugin and
 # as copied folders. Remove those so nothing loads twice. Only our skill names
 # are touched; your own skills stay.
@@ -163,4 +185,7 @@ if (-not $NoHeadroom -and -not $Only) {
   }
 }
 
-Write-Host 'done. Run /reload-plugins in open Claude Code chats.'
+# Put uv's tools (graphify, headroom) on PATH for new terminals.
+if (Has 'uv') { $null = Run uv tool update-shell }
+
+Write-Host 'done. Open a new terminal, and run /reload-plugins in open Claude Code chats.'

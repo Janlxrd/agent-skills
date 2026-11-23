@@ -5,6 +5,8 @@ $ErrorActionPreference = 'Continue'
 
 $Skills = 'grill-me', 'grilling', 'agent-browser', 'find-skills', 'web-design-guidelines', 'canvas-design', 'seo-audit', 'unslop', 'anti-ui-slop', 'design-taste-frontend', 'humanizer'
 function Has($name) { [bool](Get-Command $name -ErrorAction SilentlyContinue) }
+# where uv puts graphify and headroom
+if (Test-Path "$HOME\.local\bin") { $env:Path = "$HOME\.local\bin;$env:Path" }
 function Run { $exe, $rest = $args; & $exe @rest *> $null; $LASTEXITCODE -eq 0 }
 $Npx = if (Has 'npx.cmd') { 'npx.cmd' } elseif (Has 'npx') { 'npx' } else { $null }
 

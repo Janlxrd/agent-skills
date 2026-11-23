@@ -75,6 +75,18 @@ else
   WANT=("${SKILLS[@]}")
 fi
 
+# Install missing tools (Node.js, uv) so everything works the first time.
+export PATH="$HOME/.local/bin:$PATH"
+if ! has npx; then
+  if has brew; then echo "installing Node.js (brew)..."; brew install node >/dev/null 2>&1 || true; fi
+  has npx || echo "warn: Node.js not found, so the skills can't install. Get it from https://nodejs.org and run this again."
+fi
+if [ -z "$ONLY" ] && { [ "$NO_GRAPHIFY" = 0 ] || [ "$NO_HEADROOM" = 0 ]; } && ! has uv; then
+  echo "installing uv (astral.sh)..."
+  curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1 || true
+  has uv || echo "warn: uv install failed, so graphify and headroom will be skipped"
+fi
+
 # Older versions of this repo shipped its own copy of the skills as a plugin and
 # as copied folders. Remove those so nothing loads twice. Only our skill names
 # are touched; your own skills stay.
@@ -162,4 +174,7 @@ if [ "$NO_HEADROOM" = 0 ] && [ -z "$ONLY" ]; then
   fi
 fi
 
-echo "done. Run /reload-plugins in open Claude Code chats."
+# Put uv's tools (graphify, headroom) on PATH for new terminals.
+has uv && uv tool update-shell >/dev/null 2>&1 || true
+
+echo "done. Open a new terminal, and run /reload-plugins in open Claude Code chats."

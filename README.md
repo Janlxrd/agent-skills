@@ -17,12 +17,17 @@ irm https://raw.githubusercontent.com/Janlxrd/agent-skills/main/install.ps1 | ie
 ```
 
 The script installs:
-- **The skills** below, with [`npx skills`](https://github.com/vercel-labs/skills). It puts each one into every agent it finds on your machine (Claude Code, Cursor, Codex, Gemini CLI, Copilot, Windsurf, OpenCode and others). Needs [Node.js](https://nodejs.org).
-- **The Karpathy coding rules**, as their own Claude Code plugin from [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills). Needs Claude Code.
-- **[graphify](https://github.com/Graphify-Labs/graphify)**, which turns a codebase into a knowledge graph (type `/graphify .`). Installed with `uv` or `pipx`, then its own `graphify install` adds the skill. It also adds a short graphify section to `~/.claude/CLAUDE.md`. Needs [uv](https://docs.astral.sh/uv/) or pipx.
-- **[headroom](https://github.com/chopratejas/headroom)**, which cuts the tokens Claude Code sends by compressing context through a local proxy. The script only installs it (with `uv`). To use it, start Claude with `headroom wrap claude` instead of `claude`. Needs uv.
+- **The skills** below, with [`npx skills`](https://github.com/vercel-labs/skills). It puts each one into every agent it finds on your machine (Claude Code, Cursor, Codex, Gemini CLI, Copilot, Windsurf, OpenCode and others).
+- **The Karpathy coding rules**, as their own Claude Code plugin from [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills). Needs Claude Code, which you install yourself.
+- **[graphify](https://github.com/Graphify-Labs/graphify)**, which turns a codebase into a knowledge graph (type `/graphify .`). Installed with `uv` or `pipx`, then its own `graphify install` adds the skill. It also adds a short graphify section to `~/.claude/CLAUDE.md`.
+- **[headroom](https://github.com/chopratejas/headroom)**, which cuts the tokens Claude Code sends by compressing context through a local proxy. The script only installs it (with `uv`). To use it, start Claude with `headroom wrap claude` instead of `claude`.
 
-Anything it can't install (say, no Node.js) is skipped with a message. Your own skills and the rest of your `CLAUDE.md` are never touched. If you used an older version of this repo, the script also removes the old `agent-skills` plugin and the skill copies it made, so nothing loads twice.
+It also installs the tools those need if you don't have them:
+- **Windows:** Git and Node.js (with winget, so Windows may ask for permission), and [uv](https://docs.astral.sh/uv/).
+- **macOS:** Node.js (with Homebrew, if you have it) and uv.
+- **Linux:** uv. Install Node.js yourself first.
+
+When it's done, open a new terminal so `graphify` and `headroom` work. Anything it can't install is skipped with a message. Your own skills and the rest of your `CLAUDE.md` are never touched. If you used an older version of this repo, the script also removes the old `agent-skills` plugin and the skill copies it made, so nothing loads twice.
 
 | What you want | macOS / Linux | Windows |
 |---|---|---|

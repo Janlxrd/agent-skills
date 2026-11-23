@@ -6,6 +6,7 @@ set -uo pipefail
 
 SKILLS=(grill-me grilling agent-browser find-skills web-design-guidelines canvas-design seo-audit unslop anti-ui-slop design-taste-frontend humanizer)
 has() { command -v "$1" >/dev/null 2>&1; }
+export PATH="$HOME/.local/bin:$PATH"   # where uv puts graphify and headroom
 
 # Skills, from every agent npx skills put them in.
 if has npx; then
