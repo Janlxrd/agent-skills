@@ -14,6 +14,12 @@ $Npx = if (Has 'npx.cmd') { 'npx.cmd' } elseif (Has 'npx') { 'npx' } else { $nul
 if ($Npx) {
   $a = @(); foreach ($s in $Skills) { $a += '--skill', $s }
   if (Run $Npx -y skills@latest remove -g -y @a) { Write-Host "removed skills: $($Skills -join ' ')" }
+  # claude-red: every installed skill named offensive-* .
+  $red = (& $Npx -y skills@latest list -g 2>$null | Select-String -Pattern 'offensive-[a-z0-9-]+' -AllMatches | ForEach-Object { $_.Matches.Value }) | Sort-Object -Unique
+  if ($red) {
+    $ra = @(); foreach ($s in $red) { $ra += '--skill', $s }
+    if (Run $Npx -y skills@latest remove -g -y @ra) { Write-Host "removed claude-red ($($red.Count) skills)" }
+  }
 } else {
   Write-Host 'skip: skills (needs Node.js for npx)'
 }

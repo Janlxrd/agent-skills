@@ -38,12 +38,13 @@ Options
   --no-rules      Skip the Karpathy rules plugin.
   --no-graphify   Skip graphify.
   --no-headroom   Skip headroom.
+  --no-red        Skip claude-red (79 offensive-security skills).
   --list          List the skills and exit.
   -h, --help      Show this help.
 EOF
 }
 
-ONLY="" NO_RULES=0 NO_GRAPHIFY=0 NO_HEADROOM=0
+ONLY="" NO_RULES=0 NO_GRAPHIFY=0 NO_HEADROOM=0 NO_RED=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --only) shift; ONLY="${1:-}" ;;
@@ -51,6 +52,7 @@ while [ $# -gt 0 ]; do
     --no-rules) NO_RULES=1 ;;
     --no-graphify) NO_GRAPHIFY=1 ;;
     --no-headroom) NO_HEADROOM=1 ;;
+    --no-red) NO_RED=1 ;;
     --list) for s in "${SKILLS[@]}"; do echo "${s#* }"; done; exit 0 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; usage >&2; exit 1 ;;
@@ -128,6 +130,18 @@ if has npx; then
   done
 else
   echo "skip: skills (needs Node.js for npx: https://nodejs.org)"
+fi
+
+# claude-red: 79 offensive-security skills (SnailSploit/claude-red). All of them
+# are named offensive-*, which is how the uninstaller finds them again.
+if [ "$NO_RED" = 0 ] && [ -z "$ONLY" ]; then
+  if has npx; then
+    if npx -y skills@latest add SnailSploit/claude-red --skill '*' -g -y >/dev/null 2>&1; then
+      echo "installed claude-red (79 offensive-security skills)"
+    else
+      echo "warn: claude-red failed. Try: npx skills add SnailSploit/claude-red --skill '*' -g"
+    fi
+  fi
 fi
 
 # Karpathy coding rules: their own Claude Code plugin.

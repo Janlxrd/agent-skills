@@ -21,6 +21,7 @@ The script installs:
 - **The Karpathy coding rules**, as their own Claude Code plugin from [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills). Needs Claude Code, which you install yourself.
 - **[graphify](https://github.com/Graphify-Labs/graphify)**, which turns a codebase into a knowledge graph (type `/graphify .`). Installed with `uv` or `pipx`, then its own `graphify install` adds the skill. It also adds a short graphify section to `~/.claude/CLAUDE.md`.
 - **[headroom](https://github.com/chopratejas/headroom)**, which cuts the tokens Claude Code sends by compressing context through a local proxy. The script only installs it (with `uv`). To use it, start Claude with `headroom wrap claude` instead of `claude`.
+- **[claude-red](https://github.com/SnailSploit/claude-red)**, 79 offensive-security skills (web, wifi, cloud, AD, and more) for authorized pentesting. All of them, into every agent. Skip with `--no-red` / `-NoRed`.
 
 It also installs the tools those need if you don't have them:
 - **Windows:** Git and Node.js (with winget, so Windows may ask for permission), and [uv](https://docs.astral.sh/uv/).
@@ -35,6 +36,7 @@ When it's done, open a new terminal so `graphify` and `headroom` work. Anything 
 | Skip the Karpathy rules | `--no-rules` | `-NoRules` |
 | Skip graphify | `--no-graphify` | `-NoGraphify` |
 | Skip headroom | `--no-headroom` | `-NoHeadroom` |
+| Skip claude-red | `--no-red` | `-NoRed` |
 | List skill names | `--list` | `-List` |
 
 With the one-liners:
@@ -64,6 +66,20 @@ Run `/reload-plugins` in any Claude Code chat that was already open.
 | anti-ui-slop | [uizze.com](https://uizze.com) |
 | design-taste-frontend (Taste Skill) | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) |
 | humanizer | [blader/humanizer](https://github.com/blader/humanizer) |
+| claude-red (79 offensive-security skills, all named `offensive-*`) | [SnailSploit/claude-red](https://github.com/SnailSploit/claude-red) |
+
+## RAPTOR (not installed by this script)
+
+[RAPTOR](https://github.com/gadievron/raptor) is a security-research framework, not a skill, so the install script leaves it alone. You run it from its own checkout. The quickest route is Docker:
+
+```bash
+git clone --branch v3.1.0 https://github.com/gadievron/raptor.git
+cd raptor
+docker pull docker.io/danielcuthbert/raptor:latest
+docker run -it -v "$PWD:/workspaces/raptor" docker.io/danielcuthbert/raptor:latest
+```
+
+Inside the container, run `raptor`. For a setup without Docker (Python 3.13, uv, Semgrep, Node.js), see its [installation docs](https://github.com/gadievron/raptor/blob/main/docs/installation.md).
 
 ## Update
 
@@ -75,7 +91,7 @@ npx skills update -g
 
 ## Uninstall
 
-Removes the skills above, the Karpathy rules plugin, graphify (including its section in `~/.claude/CLAUDE.md`) and headroom. Nothing else.
+Removes the skills above, claude-red (every `offensive-*` skill), the Karpathy rules plugin, graphify (including its section in `~/.claude/CLAUDE.md`) and headroom. Nothing else.
 
 **macOS / Linux**
 

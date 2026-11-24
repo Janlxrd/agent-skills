@@ -12,6 +12,12 @@ export PATH="$HOME/.local/bin:$PATH"   # where uv puts graphify and headroom
 if has npx; then
   args=(); for s in "${SKILLS[@]}"; do args+=(--skill "$s"); done
   npx -y skills@latest remove -g -y "${args[@]}" >/dev/null 2>&1 && echo "removed skills: ${SKILLS[*]}"
+  # claude-red: every installed skill named offensive-* .
+  red="$(npx -y skills@latest list -g 2>/dev/null | grep -oE 'offensive-[a-z0-9-]+' | sort -u)"
+  if [ -n "$red" ]; then
+    rargs=(); for s in $red; do rargs+=(--skill "$s"); done
+    npx -y skills@latest remove -g -y "${rargs[@]}" >/dev/null 2>&1 && echo "removed claude-red ($(echo "$red" | wc -l | tr -d ' ') skills)"
+  fi
 else
   echo "skip: skills (needs Node.js for npx)"
 fi

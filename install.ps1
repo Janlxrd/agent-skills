@@ -9,6 +9,7 @@ param(
   [switch]$NoRules,      # skip the Karpathy rules plugin
   [switch]$NoGraphify,   # skip graphify
   [switch]$NoHeadroom,   # skip headroom
+  [switch]$NoRed,        # skip claude-red (79 offensive-security skills)
   [switch]$List,         # list the skills and exit
   [switch]$Help
 )
@@ -45,6 +46,7 @@ Options
   -NoRules       Skip the Karpathy rules plugin.
   -NoGraphify    Skip graphify.
   -NoHeadroom    Skip headroom.
+  -NoRed         Skip claude-red (79 offensive-security skills).
   -List          List the skills and exit.
   -Help          Show this help.
 '@ | Write-Host
@@ -135,6 +137,18 @@ if ($Npx) {
   }
 } else {
   Write-Host 'skip: skills (needs Node.js for npx: https://nodejs.org)'
+}
+
+# claude-red: 79 offensive-security skills (SnailSploit/claude-red). All of them
+# are named offensive-*, which is how the uninstaller finds them again.
+if (-not $NoRed -and -not $Only) {
+  if ($Npx) {
+    if (Run $Npx -y skills@latest add SnailSploit/claude-red --skill '*' -g -y) {
+      Write-Host 'installed claude-red (79 offensive-security skills)'
+    } else {
+      Write-Host "warn: claude-red failed. Try: npx skills add SnailSploit/claude-red --skill '*' -g"
+    }
+  }
 }
 
 # Karpathy coding rules: their own Claude Code plugin.
